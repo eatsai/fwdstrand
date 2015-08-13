@@ -14,14 +14,14 @@ parser = OptionParser()
 parser.add_option("-B","--bpm",type="string",
                   dest="bpm",action="store",
                   help="CSV format of BPM file")
-parser.add_option("-A","--blat",type="string",dest="blat",action="store",help="BLAT alignments for SNPs")
+parser.add_option("-A","--sam",type="string",dest="sam",action="store",help="SAM alignments for SNPs")
 parser.add_option("-O","--output",type="string",dest="output",action="store",
                   help="specify output format for further alignment work as text, fasta, or doublefasta, or as a strandlist of matched strands (name, strand) for gtc2ped.  Specifying diagnostics will generate summary statistics")
 
 (options, args) = parser.parse_args()
 
-if options.blat == None:
-    print "specify blat alignment file with -A"
+if options.sam == None:
+    print "specify sam alignment file with -A"
 
 if options.bpm == None:
     print "specify BPM file path with -B"
@@ -31,39 +31,39 @@ if options.output == None:
     print "specity output format with -O"
     sys.exit
 
-### Initialize BLAT and BPM file classes
+### Initialize SAM and BPM file classes
 bpm = BPM(options.bpm)
-blat = BLAT(options.blat)
-#print blat.names[0], blat.chr[0],blat.pos[0],blat.strand[0]
+sam = SAM(options.sam)
+#print sam.names[0], sam.chr[0],sam.pos[0],sam.strand[0]
 
-### Get Number of SNPs and blat alignments
+### Get Number of SNPs and sam alignments
 numSNPs = len(bpm.names)
-numBlatAlignments = len(blat.names)
+numSamAlignments = len(sam.names)
 if options.output == "diagnostics":
     print 'Diagnostics Mode.  Read BPM and Alignment File'
     print 'There are ', numSNPs, ' SNPs'
-    print 'There are ', numBlatAlignments, ' BLAT alignments'
+    print 'There are ', numSamAlignments, ' SAM alignments'
 
-### Blat results Dictionary Setup
+### Sam results Dictionary Setup
 snpLookup={}
 
 ### Initialize dictionary with an empty list for each value to append later
 for name in bpm.names:
     snpLookup.setdefault(name, [])
 
-### Set up dictionary with key=SNP name, values will be blat entries in the format
+### Set up dictionary with key=SNP name, values will be sam entries in the format
 ### (chr, pos, strand) for each entry in a list    
-for i in xrange(numBlatAlignments):
-    snpLookup[blat.names[i]].append((blat.chr[i], blat.pos[i], blat.strand[i]))
+for i in xrange(numSamAlignments):
+    snpLookup[sam.names[i]].append((sam.chr[i], sam.pos[i], sam.strand[i]))
 
 if options.output == "diagnostics":
     print 'created dictionary'
 
-"""For each SNP name in bpm find the snp name in the dictionary of blat results
-Check the chromosome, then position in the blat results.
+"""For each SNP name in bpm find the snp name in the dictionary of sam results
+Check the chromosome, then position in the sam results.
 If they both match, position to within 50bp, then write the strand.
-If no match check the next blat result.
-If no more blat results write the strand as a u """
+If no match check the next sam result.
+If no more sam results write the strand as a u """
 
 strandList = []
 numMatchedPositions = 0
@@ -75,29 +75,29 @@ numReverse = 0
 numUnknown = 0
 
 for i in xrange(numSNPs): #numSNPs
-  blatEntries = snpLookup[bpm.names[i]]  # gets the list of blat results for the ith SNP name
-  numEntries = len(blatEntries) # how many entries for this snp
+  samEntries = snpLookup[bpm.names[i]]  # gets the list of sam results for the ith SNP name
+  numEntries = len(samEntries) # how many entries for this snp
   for j in xrange(numEntries):
       noMatch = 0
-      blatChr = blatEntries[j][0]
-      blatPos = blatEntries[j][1]
+      samChr = samEntries[j][0]
+      samPos = samEntries[j][1]
       
       #handle mismatch in reporting of XY region
       if bpm.chr[i] == "XY":
-          if blatChr == "X" or blatChr == "Y":
-              blatChr = "XY"
+          if samChr == "X" or samChr == "Y":
+              samChr = "XY"
               
       #check whether chromosome is the same and position are close
-      if blatChr == bpm.chr[i] and (abs(int(blatPos) - int(bpm.pos[i]))<1000):
-              thisBlatStrand = blatEntries[j][2] #forward/reverse in +/- notation
-              strandList.append(thisBlatStrand) #makes a list of blat strands when one is found
+      if samChr == bpm.chr[i] and (abs(int(samPos) - int(bpm.pos[i]))<1000):
+              thisSamStrand = samEntries[j][2] #forward/reverse in +/- notation
+              strandList.append(thisSamStrand) #makes a list of sam strands when one is found
 
               #gather forward/reverse stats
-              if blatEntries[j][2] == "+":
+              if samEntries[j][2] == "+":
                   numForward += 1
-              elif blatEntries[j][2] == "-":
+              elif samEntries[j][2] == "-":
                   numReverse += 1
-              elif blatEntries[j][2] == "u":
+              elif samEntries[j][2] == "u":
                   numUnknown += 1
               numMatchedPositions +=1
               
@@ -116,7 +116,7 @@ for i in xrange(numSNPs): #numSNPs
           
       #prepare output based on setting for unmatched only
       if options.output == 'text':
-          print bpm.names[i] ,bpm.chr[i], bpm.pos[i], 'blat', blatEntries
+          print bpm.names[i] ,bpm.chr[i], bpm.pos[i], 'sam', samEntries
       elif options.output == 'fasta':
           print '>'+bpm.names[i]+'\n'+bpm.sourceStrand[i]
       elif options.output == 'doublefasta':
