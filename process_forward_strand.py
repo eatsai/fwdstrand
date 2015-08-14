@@ -33,7 +33,7 @@ if options.output == None:
 
 ### Initialize SAM and BPM file classes
 bpm = BPM(options.bpm)
-sam = SAM(options.sam)
+sam = BLAT(options.sam)
 #print sam.names[0], sam.chr[0],sam.pos[0],sam.strand[0]
 
 ### Get Number of SNPs and sam alignments
